@@ -15,22 +15,14 @@ export default function ChartView({ expenses }) {
                 .reduce((sum, x) => sum + x.amount, 0)
         );
 
-        // ✨ custom colors (vibrant pastel palette)
-        const colors = [
-            "#6366F1", // Indigo
-            "#F59E0B", // Amber
-            "#10B981", // Emerald
-            "#EF4444", // Red
-            "#8B5CF6", // Violet
-            "#14B8A6", // Teal
-        ];
+        const colors = CATEGORIES.map((c) => c.color); // 🎯 consistent colors
 
         return {
             labels,
             datasets: [
                 {
                     data: values,
-                    backgroundColor: colors.slice(0, labels.length),
+                    backgroundColor: colors,
                     borderWidth: 2,
                     borderColor: "#fff",
                     hoverOffset: 10,

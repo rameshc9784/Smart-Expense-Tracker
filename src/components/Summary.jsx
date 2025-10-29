@@ -37,7 +37,7 @@ export default function Summary({ expenses }) {
 
             {/* Category Breakdown */}
             <div className="space-y-4">
-                {CATEGORIES.map((cat, i) => {
+                {CATEGORIES.map((cat) => {
                     const amount = categoryTotals[cat.id] || 0;
                     const percentage = total ? (amount / total) * 100 : 0;
 
@@ -49,16 +49,10 @@ export default function Summary({ expenses }) {
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div
-                                    className={`h-2 rounded-full transition-all duration-500`}
+                                    className="h-2 rounded-full transition-all duration-500"
                                     style={{
                                         width: `${percentage}%`,
-                                        backgroundColor: [
-                                            "#3b82f6", // sky
-                                            "#10b981", // green
-                                            "#f59e0b", // amber
-                                            "#ef4444", // red
-                                            "#8b5cf6", // violet
-                                        ][i % 5],
+                                        backgroundColor: cat.color,
                                     }}
                                 ></div>
                             </div>
@@ -66,6 +60,7 @@ export default function Summary({ expenses }) {
                     );
                 })}
             </div>
+
         </div>
     );
 }
