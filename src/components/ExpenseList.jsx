@@ -1,8 +1,8 @@
 import React from "react";
-import { CalendarDays, Tag, Wallet, Clock } from "lucide-react";
+import { CalendarDays, Tag, Wallet, Clock, Trash2 } from "lucide-react";
 import { CATEGORIES } from "../utils/categories";
 
-export default function ExpenseList({ expenses, filters }) {
+export default function ExpenseList({ expenses, filters, setExpenses }) {
     // --- Filtering logic ---
     const filtered = expenses.filter((e) => {
         if (filters.category !== "all" && e.category !== filters.category) return false;
@@ -19,7 +19,13 @@ export default function ExpenseList({ expenses, filters }) {
     });
 
     // --- Sorting ---
-    const sorted = filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+    let sorted = [...filtered];
+
+    if (filters.sortBy === "recent") {
+        sorted.sort((a, b) => new Date(b.date) - new Date(a.date)); // Most recent first
+    } else if (filters.sortBy === "amount") {
+        sorted.sort((a, b) => b.amount - a.amount); // Highest amount first
+    };
 
     // --- Group by month ---
     const grouped = sorted.reduce((acc, ex) => {
@@ -33,6 +39,13 @@ export default function ExpenseList({ expenses, filters }) {
     }, {});
 
     const groupedEntries = Object.entries(grouped);
+
+    // --- Delete Handler ---
+    const handleDelete = (id) => {
+        if (window.confirm("Are you sure you want to delete this expense?")) {
+            setExpenses((prev) => prev.filter((e) => e.id !== id));
+        }
+    };
 
     // --- No data state ---
     if (groupedEntries.length === 0) {
@@ -48,7 +61,7 @@ export default function ExpenseList({ expenses, filters }) {
     return (
         <div className="mt-0">
             {/* Title */}
-            <div className="flex items-center gap-2 mb-6">
+            <div className="flex items-center gap-2 mb-4">
                 <Clock className="text-indigo-500" size={22} />
                 <h2 className="text-xl sm:text-2xl font-semibold text-indigo-500">
                     Expense History
@@ -56,7 +69,7 @@ export default function ExpenseList({ expenses, filters }) {
             </div>
 
             {/* Expense Cards */}
-            <div className="space-y-6">
+            <div className="space-y-4">
                 {groupedEntries.map(([month, items]) => {
                     const total = items.reduce((sum, e) => sum + e.amount, 0);
 
@@ -66,7 +79,7 @@ export default function ExpenseList({ expenses, filters }) {
                             className="bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden"
                         >
                             {/* Header */}
-                            <div className="flex items-center justify-between bg-linear-to-r from-sky-500 to-indigo-500 text-white px-6 py-3">
+                            <div className="flex items-center justify-between bg-gradient-to-r from-sky-500 to-indigo-500 text-white px-6 py-3">
                                 <div className="flex items-center gap-2">
                                     <CalendarDays size={18} />
                                     <h3 className="text-sm sm:text-base font-medium">{month}</h3>
@@ -77,7 +90,7 @@ export default function ExpenseList({ expenses, filters }) {
                             </div>
 
                             {/* Expense Items */}
-                            <ul className="divide-y divide-gray-100 px-4 sm:px-6 py-3">
+                            <ul className="px-4 sm:px-6 py-3">
                                 {items.map((ex, i) => {
                                     const category = CATEGORIES.find((c) => c.id === ex.category);
                                     const categoryColor =
@@ -91,7 +104,7 @@ export default function ExpenseList({ expenses, filters }) {
 
                                     return (
                                         <li
-                                            key={i}
+                                            key={ex.id}
                                             className="flex justify-between items-center py-2 px-2 hover:bg-sky-50 rounded-lg transition-all duration-200"
                                         >
                                             <div>
@@ -113,9 +126,20 @@ export default function ExpenseList({ expenses, filters }) {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <p className="font-bold text-sky-700 text-lg">
-                                                ₹{ex.amount}
-                                            </p>
+
+                                            {/* Right side — Amount + Delete */}
+                                            <div className="flex items-center gap-3">
+                                                <p className="font-bold text-sky-700 text-lg">
+                                                    ₹{ex.amount}
+                                                </p>
+                                                <button
+                                                    onClick={() => handleDelete(ex.id)}
+                                                    className="p-1.5 rounded-full hover:bg-red-100 text-red-500 transition"
+                                                    title="Delete entry"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
                                         </li>
                                     );
                                 })}

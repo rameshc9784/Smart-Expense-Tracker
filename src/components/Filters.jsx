@@ -19,7 +19,7 @@ export default function Filters({ filters, setFilters }) {
         });
 
     return (
-        <div className="bg-linear-to-br from-indigo-50 to-sky-50 border border-indigo-100 rounded-2xl shadow-md p-6 transition-all duration-300">
+        <div className="bg-gradient-to-br from-indigo-50 to-sky-50 border border-indigo-100 rounded-2xl shadow-md p-6 transition-all duration-300">
             <div className="flex items-center justify-between mb-5">
                 <h3 className="text-lg font-semibold text-indigo-700 flex items-center gap-2">
                     <Filter size={20} className="text-indigo-500" />
