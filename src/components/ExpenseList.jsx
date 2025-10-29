@@ -2,7 +2,8 @@ import React from "react";
 import { CalendarDays, Tag, Wallet, Clock, Trash2 } from "lucide-react";
 import { CATEGORIES } from "../utils/categories";
 
-export default function ExpenseList({ expenses, filters, setExpenses }) {
+export default function ExpenseList({ expenses, filters, onDelete }) {
+
     // --- Filtering logic ---
     const filtered = expenses.filter((e) => {
         if (filters.category !== "all" && e.category !== filters.category) return false;
@@ -43,9 +44,10 @@ export default function ExpenseList({ expenses, filters, setExpenses }) {
     // --- Delete Handler ---
     const handleDelete = (id) => {
         if (window.confirm("Are you sure you want to delete this expense?")) {
-            setExpenses((prev) => prev.filter((e) => e.id !== id));
+            onDelete(id);
         }
     };
+
 
     // --- No data state ---
     if (groupedEntries.length === 0) {
