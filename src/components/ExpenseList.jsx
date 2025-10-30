@@ -1,8 +1,10 @@
 import React from "react";
 import { CalendarDays, Tag, Wallet, Clock, Trash2 } from "lucide-react";
 import { CATEGORIES } from "../utils/categories";
+import ConfirmModal from "./ConfirmModal";
 
 export default function ExpenseList({ expenses, filters, onDelete }) {
+    const [deleteId, setDeleteId] = React.useState(null);
 
     // --- Filtering logic ---
     const filtered = expenses.filter((e) => {
@@ -21,12 +23,8 @@ export default function ExpenseList({ expenses, filters, onDelete }) {
 
     // --- Sorting ---
     let sorted = [...filtered];
-
-    if (filters.sortBy === "recent") {
-        sorted.sort((a, b) => new Date(b.date) - new Date(a.date)); // Most recent first
-    } else if (filters.sortBy === "amount") {
-        sorted.sort((a, b) => b.amount - a.amount); // Highest amount first
-    };
+    if (filters.sortBy === "recent") sorted.sort((a, b) => new Date(b.date) - new Date(a.date));
+    else if (filters.sortBy === "amount") sorted.sort((a, b) => b.amount - a.amount);
 
     // --- Group by month ---
     const grouped = sorted.reduce((acc, ex) => {
@@ -38,18 +36,14 @@ export default function ExpenseList({ expenses, filters, onDelete }) {
         acc[monthKey].push(ex);
         return acc;
     }, {});
-
     const groupedEntries = Object.entries(grouped);
 
-    // --- Delete Handler ---
-    const handleDelete = (id) => {
-        if (window.confirm("Are you sure you want to delete this expense?")) {
-            onDelete(id);
-        }
+    // --- Modal confirm handler ---
+    const confirmDelete = () => {
+        onDelete(deleteId);
+        setDeleteId(null);
     };
 
-
-    // --- No data state ---
     if (groupedEntries.length === 0) {
         return (
             <div className="text-center py-24 text-gray-500 bg-white rounded-2xl shadow-sm">
@@ -74,7 +68,6 @@ export default function ExpenseList({ expenses, filters, onDelete }) {
             <div className="space-y-4">
                 {groupedEntries.map(([month, items]) => {
                     const total = items.reduce((sum, e) => sum + e.amount, 0);
-
                     return (
                         <div
                             key={month}
@@ -135,7 +128,7 @@ export default function ExpenseList({ expenses, filters, onDelete }) {
                                                     ₹{ex.amount}
                                                 </p>
                                                 <button
-                                                    onClick={() => handleDelete(ex.id)}
+                                                    onClick={() => setDeleteId(ex.id)}
                                                     className="p-1.5 rounded-full hover:bg-red-100 text-red-500 transition"
                                                     title="Delete entry"
                                                 >
@@ -150,6 +143,13 @@ export default function ExpenseList({ expenses, filters, onDelete }) {
                     );
                 })}
             </div>
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={!!deleteId}
+                onClose={() => setDeleteId(null)}
+                onConfirm={confirmDelete}
+            />
         </div>
     );
 }
