@@ -1,12 +1,16 @@
 import React from "react";
 import { CalendarDays, Tag, Wallet, Clock, Trash2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { CATEGORIES } from "../utils/categories";
 import ConfirmModal from "./ConfirmModal";
 
 export default function ExpenseList({ expenses, filters, onDelete }) {
     const [deleteId, setDeleteId] = React.useState(null);
+    const [scrollTop, setScrollTop] = React.useState(0);
+    const [maxScroll, setMaxScroll] = React.useState(0);
+    const scrollRef = React.useRef(null);
 
-    // --- Filtering logic ---
+    // --- Filtering ---
     const filtered = expenses.filter((e) => {
         if (filters.category !== "all" && e.category !== filters.category) return false;
         if (filters.startDate && e.date < filters.startDate) return false;
@@ -38,12 +42,27 @@ export default function ExpenseList({ expenses, filters, onDelete }) {
     }, {});
     const groupedEntries = Object.entries(grouped);
 
-    // --- Modal confirm handler ---
+    // --- Scroll fade logic ---
+    React.useEffect(() => {
+        const handleScroll = () => {
+            const el = scrollRef.current;
+            if (el) {
+                setScrollTop(el.scrollTop);
+                setMaxScroll(el.scrollHeight - el.clientHeight);
+            }
+        };
+        const el = scrollRef.current;
+        if (el) el.addEventListener("scroll", handleScroll);
+        return () => el && el.removeEventListener("scroll", handleScroll);
+    }, []);
+
+    // --- Delete confirm handler ---
     const confirmDelete = () => {
         onDelete(deleteId);
         setDeleteId(null);
     };
 
+    // --- Empty State ---
     if (groupedEntries.length === 0) {
         return (
             <div className="text-center py-24 text-gray-500 bg-white rounded-2xl shadow-sm">
@@ -55,7 +74,7 @@ export default function ExpenseList({ expenses, filters, onDelete }) {
     }
 
     return (
-        <div className="mt-0">
+        <div className="mt-0 relative">
             {/* Title */}
             <div className="flex items-center gap-2 mb-4">
                 <Clock className="text-indigo-500" size={22} />
@@ -64,84 +83,118 @@ export default function ExpenseList({ expenses, filters, onDelete }) {
                 </h2>
             </div>
 
-            {/* Expense Cards */}
-            <div className="space-y-4">
-                {groupedEntries.map(([month, items]) => {
-                    const total = items.reduce((sum, e) => sum + e.amount, 0);
-                    return (
-                        <div
-                            key={month}
-                            className="bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden"
-                        >
-                            {/* Header */}
-                            <div className="flex items-center justify-between bg-gradient-to-r from-sky-500 to-indigo-500 text-white px-6 py-3">
-                                <div className="flex items-center gap-2">
-                                    <CalendarDays size={18} />
-                                    <h3 className="text-sm sm:text-base font-medium">{month}</h3>
+            {/* Scrollable List with Smooth Animated Shadows */}
+            <div className="relative">
+                {/* Top shadow */}
+                <AnimatePresence>
+                    {scrollTop > 10 && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="absolute top-0 left-0 right-0 h-5 bg-gradient-to-b from-gray-300/50 to-transparent z-10 pointer-events-none rounded-t-2xl"
+                        />
+                    )}
+                </AnimatePresence>
+
+                {/* Bottom shadow */}
+                <AnimatePresence>
+                    {scrollTop < maxScroll - 10 && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-gray-300/50 to-transparent z-10 pointer-events-none rounded-b-2xl"
+                        />
+                    )}
+                </AnimatePresence>
+
+                {/* Scrollable container */}
+                <div
+                    ref={scrollRef}
+                    className="space-y-4 max-h-[80vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300"
+                >
+                    {groupedEntries.map(([month, items]) => {
+                        const total = items.reduce((sum, e) => sum + e.amount, 0);
+                        return (
+                            <motion.div
+                                key={month}
+                                layout
+                                className="bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden"
+                            >
+                                {/* Header */}
+                                <div className="flex items-center justify-between bg-gradient-to-r from-sky-500 to-indigo-500 text-white px-6 py-3">
+                                    <div className="flex items-center gap-2">
+                                        <CalendarDays size={18} />
+                                        <h3 className="text-sm sm:text-base font-medium">{month}</h3>
+                                    </div>
+                                    <p className="text-sm sm:text-base font-semibold">
+                                        Total: ₹{total.toLocaleString()}
+                                    </p>
                                 </div>
-                                <p className="text-sm sm:text-base font-semibold">
-                                    Total: ₹{total.toLocaleString()}
-                                </p>
-                            </div>
 
-                            {/* Expense Items */}
-                            <ul className="px-4 sm:px-6 py-3">
-                                {items.map((ex, i) => {
-                                    const category = CATEGORIES.find((c) => c.id === ex.category);
-                                    const categoryColor =
-                                        [
-                                            "bg-sky-100 text-sky-700",
-                                            "bg-emerald-100 text-emerald-700",
-                                            "bg-amber-100 text-amber-700",
-                                            "bg-rose-100 text-rose-700",
-                                            "bg-violet-100 text-violet-700",
-                                        ][i % 5];
+                                {/* Expense Items */}
+                                <ul className="px-4 sm:px-6 py-3">
+                                    {items.map((ex, i) => {
+                                        const category = CATEGORIES.find((c) => c.id === ex.category);
+                                        const categoryColor =
+                                            [
+                                                "bg-sky-100 text-sky-700",
+                                                "bg-emerald-100 text-emerald-700",
+                                                "bg-amber-100 text-amber-700",
+                                                "bg-rose-100 text-rose-700",
+                                                "bg-violet-100 text-violet-700",
+                                            ][i % 5];
 
-                                    return (
-                                        <li
-                                            key={ex.id}
-                                            className="flex justify-between items-center py-2 px-2 hover:bg-sky-50 rounded-lg transition-all duration-200"
-                                        >
-                                            <div>
-                                                <p className="font-semibold text-gray-800">
-                                                    {ex.note || "No note added"}
-                                                </p>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span
-                                                        className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${categoryColor}`}
-                                                    >
-                                                        <Tag size={12} />
-                                                        {category ? category.label : ex.category}
-                                                    </span>
-                                                    <span className="text-xs text-gray-500">
-                                                        {new Date(ex.date).toLocaleDateString("en-IN", {
-                                                            day: "numeric",
-                                                            month: "short",
-                                                        })}
-                                                    </span>
+                                        return (
+                                            <motion.li
+                                                key={ex.id}
+                                                layout
+                                                className="flex justify-between items-center py-2 px-2 hover:bg-sky-50 rounded-lg transition-all duration-200"
+                                            >
+                                                <div>
+                                                    <p className="font-semibold text-gray-800">
+                                                        {ex.note || "No note added"}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span
+                                                            className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${categoryColor}`}
+                                                        >
+                                                            <Tag size={12} />
+                                                            {category ? category.label : ex.category}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">
+                                                            {new Date(ex.date).toLocaleDateString("en-IN", {
+                                                                day: "numeric",
+                                                                month: "short",
+                                                            })}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                            </div>
 
-                                            {/* Right side — Amount + Delete */}
-                                            <div className="flex items-center gap-3">
-                                                <p className="font-bold text-sky-700 text-lg">
-                                                    ₹{ex.amount}
-                                                </p>
-                                                <button
-                                                    onClick={() => setDeleteId(ex.id)}
-                                                    className="p-1.5 rounded-full hover:bg-red-100 text-red-500 transition"
-                                                    title="Delete entry"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </div>
-                    );
-                })}
+                                                {/* Right side — Amount + Delete */}
+                                                <div className="flex items-center gap-3">
+                                                    <p className="font-bold text-sky-700 text-lg">
+                                                        ₹{ex.amount}
+                                                    </p>
+                                                    <button
+                                                        onClick={() => setDeleteId(ex.id)}
+                                                        className="p-1.5 rounded-full hover:bg-red-100 text-red-500 transition"
+                                                        title="Delete entry"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
+                                            </motion.li>
+                                        );
+                                    })}
+                                </ul>
+                            </motion.div>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Confirm Modal */}
